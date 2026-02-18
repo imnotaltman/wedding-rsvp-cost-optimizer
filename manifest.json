@@ -1,0 +1,16 @@
+{
+  "name": "경조사 - 경조사의 Luma",
+  "short_name": "경조사",
+  "description": "내 경조사를 한눈에 관리하는 앱",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💒</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

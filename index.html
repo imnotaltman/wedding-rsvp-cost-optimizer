@@ -2,87 +2,761 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wedding RSVP Cost Optimizer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>경조사 - 경조사의 Luma</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0b1020" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <style>
-    :root { --bg:#0b1020; --card:#131b33; --muted:#9ca8c7; --line:#273257; --accent:#7c9cff; --ok:#46d39a; --warn:#ffb454; }
-    *{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:linear-gradient(120deg,#0b1020,#151b2f);color:#eef2ff}
-    .wrap{max-width:1100px;margin:0 auto;padding:28px}
-    h1{margin:0 0 8px;font-size:30px} .sub{color:var(--muted);margin-bottom:22px}
-    .tabs{display:flex;gap:10px;margin-bottom:16px} .tab{padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#101831;color:#cbd5ff;cursor:pointer}
-    .tab.active{background:var(--accent);border-color:var(--accent);color:#07102d;font-weight:700}
-    .panel{display:none} .panel.active{display:block}
-    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
-    .label{color:var(--muted);font-size:12px}.value{font-size:24px;font-weight:700;margin-top:6px}
-    table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-    th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;font-size:14px} th{color:#c5d1ff;background:#141f3c}
-    .pill{padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700}.danger{background:#40223b;color:#ff9ec8}.ok{background:#173427;color:#95f5c8}
-    .plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px}
-    .price{font-size:28px;font-weight:800}
-    @media(max-width:900px){.grid,.plans{grid-template-columns:1fr}}
+    :root {
+      --bg: #0b1020; --card: #131b33; --card-hover: #1a2545;
+      --muted: #8b97b8; --line: #1f2d4d; --accent: #7c9cff;
+      --accent-soft: rgba(124,156,255,0.12); --ok: #46d39a; --ok-soft: rgba(70,211,154,0.12);
+      --warn: #ffb454; --warn-soft: rgba(255,180,84,0.12);
+      --danger: #ff6b8a; --danger-soft: rgba(255,107,138,0.12);
+      --text: #eef2ff; --text-dim: #a3aec9;
+      --radius: 16px; --radius-sm: 10px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Pretendard', sans-serif;
+      background: var(--bg); color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* App Shell */
+    .app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+    .app-header {
+      padding: 16px 20px 12px; flex-shrink: 0;
+      background: rgba(11,16,32,0.92); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--line); z-index: 10;
+    }
+    .app-header h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.3px; }
+    .app-header .subtitle { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    .app-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(70px + var(--safe-bottom)); }
+
+    /* Bottom Nav */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      display: flex; justify-content: space-around; align-items: center;
+      background: rgba(11,16,32,0.95); backdrop-filter: blur(20px);
+      border-top: 1px solid var(--line);
+      padding: 8px 0 calc(8px + var(--safe-bottom));
+      z-index: 100;
+    }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      font-size: 11px; padding: 6px 12px; transition: color 0.2s;
+    }
+    .nav-item.active { color: var(--accent); }
+    .nav-item svg { width: 24px; height: 24px; }
+
+    /* Screen */
+    .screen { display: none; padding: 20px; }
+    .screen.active { display: block; }
+
+    /* Cards */
+    .event-card {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: var(--radius); padding: 18px; margin-bottom: 12px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .event-card:hover, .event-card:active { background: var(--card-hover); transform: scale(0.99); }
+    .event-date {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--accent); font-weight: 600;
+      background: var(--accent-soft); padding: 4px 10px;
+      border-radius: 20px; margin-bottom: 10px;
+    }
+    .event-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .event-meta { font-size: 13px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+    .event-meta span { display: inline-flex; align-items: center; gap: 4px; }
+    .event-type-badge {
+      display: inline-block; font-size: 11px; font-weight: 700;
+      padding: 3px 8px; border-radius: 6px; margin-bottom: 8px;
+    }
+    .badge-wedding { background: var(--danger-soft); color: var(--danger); }
+    .badge-funeral { background: #1a1a2e; color: #8b8baa; }
+    .badge-birthday { background: var(--warn-soft); color: var(--warn); }
+    .badge-baby { background: var(--ok-soft); color: var(--ok); }
+    .badge-housewarming { background: #1c2a3d; color: #6baed6; }
+
+    /* Stats */
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: var(--radius-sm); padding: 14px; text-align: center;
+    }
+    .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-size: 22px; font-weight: 800; margin-top: 4px; }
+
+    /* Section */
+    .section-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .section-title .count { font-size: 12px; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 10px; }
+
+    /* Host Dashboard */
+    .host-tabs { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .host-tab {
+      white-space: nowrap; padding: 8px 16px; border: 1px solid var(--line);
+      border-radius: 20px; background: var(--card); color: var(--text-dim);
+      cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;
+    }
+    .host-tab.active { background: var(--accent); border-color: var(--accent); color: #07102d; }
+
+    /* Guest List */
+    .guest-row {
+      display: flex; align-items: center; padding: 12px 14px;
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: var(--radius-sm); margin-bottom: 8px; gap: 12px;
+    }
+    .guest-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--accent-soft); display: flex; align-items: center;
+      justify-content: center; font-size: 14px; font-weight: 700; color: var(--accent);
+      flex-shrink: 0;
+    }
+    .guest-info { flex: 1; min-width: 0; }
+    .guest-name { font-size: 14px; font-weight: 600; }
+    .guest-group { font-size: 12px; color: var(--muted); }
+    .status-pill {
+      font-size: 11px; font-weight: 700; padding: 4px 10px;
+      border-radius: 20px; white-space: nowrap;
+    }
+    .status-confirmed { background: var(--ok-soft); color: var(--ok); }
+    .status-pending { background: var(--warn-soft); color: var(--warn); }
+    .status-declined { background: var(--danger-soft); color: var(--danger); }
+
+    /* Cost Panel */
+    .cost-summary {
+      background: linear-gradient(135deg, #162040, #1a2850);
+      border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 20px; margin-bottom: 16px;
+    }
+    .cost-total { font-size: 32px; font-weight: 800; }
+    .cost-saved { color: var(--ok); font-size: 14px; margin-top: 4px; }
+    .cost-bar { height: 6px; background: var(--line); border-radius: 3px; margin-top: 12px; overflow: hidden; }
+    .cost-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+
+    /* Detail Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6); z-index: 200;
+      animation: fadeIn 0.2s;
+    }
+    .modal-overlay.active { display: flex; align-items: flex-end; }
+    .modal-sheet {
+      width: 100%; max-height: 85vh; background: var(--bg);
+      border-radius: 20px 20px 0 0; padding: 20px;
+      overflow-y: auto; animation: slideUp 0.3s;
+    }
+    .modal-handle { width: 36px; height: 4px; background: var(--line); border-radius: 2px; margin: 0 auto 16px; }
+    .modal-close { position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 20px; }
+
+    /* RSVP Action */
+    .rsvp-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .btn {
+      flex: 1; padding: 14px; border: none; border-radius: 12px;
+      font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-primary { background: var(--accent); color: #07102d; }
+    .btn-primary:active { background: #6888dd; }
+    .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--line); }
+    .btn-danger { background: var(--danger-soft); color: var(--danger); }
+
+    /* Animations */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    /* Amount input */
+    .amount-section { margin-top: 16px; }
+    .amount-input-wrap {
+      display: flex; align-items: center; background: var(--card);
+      border: 1px solid var(--line); border-radius: 12px;
+      padding: 12px 16px; gap: 8px;
+    }
+    .amount-input-wrap span { color: var(--muted); font-size: 16px; }
+    .amount-input {
+      flex: 1; background: none; border: none; color: var(--text);
+      font-size: 20px; font-weight: 700; outline: none;
+    }
+    .quick-amounts { display: flex; gap: 8px; margin-top: 8px; }
+    .quick-amount {
+      padding: 6px 12px; border: 1px solid var(--line); border-radius: 8px;
+      background: var(--card); color: var(--text-dim); font-size: 12px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .quick-amount:active { background: var(--accent-soft); color: var(--accent); }
+
+    /* Empty state */
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+    .empty-state svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.5; }
+    .empty-state p { font-size: 14px; }
+
+    /* Scrollbar */
+    .app-body::-webkit-scrollbar { width: 0; }
+
+    /* FAB */
+    .fab {
+      position: fixed; bottom: calc(80px + var(--safe-bottom)); right: 20px;
+      width: 52px; height: 52px; border-radius: 50%;
+      background: var(--accent); border: none; color: #07102d;
+      font-size: 28px; cursor: pointer; z-index: 50;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 20px rgba(124,156,255,0.3);
+      transition: all 0.2s;
+    }
+    .fab:active { transform: scale(0.92); }
+
+    /* Timeline */
+    .timeline-month { font-size: 13px; font-weight: 700; color: var(--accent); margin: 16px 0 8px; padding-left: 4px; }
+
+    /* Filter chips */
+    .filter-row { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+    .filter-chip {
+      white-space: nowrap; padding: 6px 14px; border: 1px solid var(--line);
+      border-radius: 20px; background: var(--card); color: var(--text-dim);
+      cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;
+    }
+    .filter-chip.active { background: var(--accent); border-color: var(--accent); color: #07102d; }
+
+    /* Profile */
+    .profile-header { text-align: center; padding: 20px 0; }
+    .profile-avatar {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: var(--accent-soft); margin: 0 auto 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; font-weight: 800; color: var(--accent);
+    }
+    .profile-name { font-size: 20px; font-weight: 700; }
+    .profile-stats { display: flex; justify-content: center; gap: 24px; margin-top: 12px; }
+    .profile-stat { text-align: center; }
+    .profile-stat-value { font-size: 18px; font-weight: 700; }
+    .profile-stat-label { font-size: 11px; color: var(--muted); }
+
+    .menu-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px; background: var(--card); border: 1px solid var(--line);
+      border-radius: var(--radius-sm); margin-bottom: 8px; cursor: pointer;
+    }
+    .menu-item:active { background: var(--card-hover); }
+    .menu-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .menu-label { font-size: 14px; font-weight: 600; }
+    .menu-desc { font-size: 12px; color: var(--muted); }
+
+    /* D-day badge */
+    .dday { font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+    .dday-soon { background: var(--danger-soft); color: var(--danger); }
+    .dday-upcoming { background: var(--warn-soft); color: var(--warn); }
+    .dday-far { background: var(--accent-soft); color: var(--accent); }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Wedding RSVP Cost Optimizer</h1>
-    <div class="sub">하객 RSVP 변동 기반 식대/답례품/좌석 최적화 운영 프로토타입</div>
+<div class="app">
+  <!-- Header -->
+  <div class="app-header" id="appHeader">
+    <h1 id="headerTitle">경조사</h1>
+    <div class="subtitle" id="headerSubtitle">내 경조사를 한눈에</div>
+  </div>
 
-    <div class="tabs">
-      <button class="tab active" data-tab="rsvp">핵심 화면 1: RSVP 전환 대시보드</button>
-      <button class="tab" data-tab="cost">핵심 화면 2: 비용 최적화 시뮬레이터</button>
+  <!-- App Body -->
+  <div class="app-body">
+
+    <!-- Screen 1: 참가자 - 이벤트 목록 -->
+    <div class="screen active" id="screen-events">
+      <div class="filter-row">
+        <button class="filter-chip active" data-filter="all">전체</button>
+        <button class="filter-chip" data-filter="wedding">💒 결혼</button>
+        <button class="filter-chip" data-filter="funeral">🕊️ 부고</button>
+        <button class="filter-chip" data-filter="birthday">🎂 생일</button>
+        <button class="filter-chip" data-filter="baby">🍼 돌잔치</button>
+        <button class="filter-chip" data-filter="housewarming">🏠 집들이</button>
+      </div>
+
+      <div class="timeline-month">2026년 2월</div>
+      <div id="eventList"></div>
+
+      <div class="timeline-month">2026년 3월</div>
+      <div id="eventListMarch"></div>
     </div>
 
-    <section id="rsvp" class="panel active">
-      <div class="grid">
-        <div class="card"><div class="label">초대 발송</div><div class="value">342명</div></div>
-        <div class="card"><div class="label">확정 응답률</div><div class="value">71%</div></div>
-        <div class="card"><div class="label">노쇼 위험 하객</div><div class="value" style="color:var(--warn)">26명</div></div>
+    <!-- Screen 2: 호스트 - RSVP 대시보드 -->
+    <div class="screen" id="screen-host">
+      <div class="host-tabs">
+        <button class="host-tab active" data-host-tab="overview">현황</button>
+        <button class="host-tab" data-host-tab="guests">하객 관리</button>
+        <button class="host-tab" data-host-tab="cost">비용 최적화</button>
       </div>
-      <table>
-        <thead><tr><th>그룹</th><th>미응답 수</th><th>리마인드 추천</th><th>예상 확정 전환</th></tr></thead>
-        <tbody>
-          <tr><td>친구/동료</td><td>38</td><td>SMS + 카카오톡 리마인드</td><td><span class="pill ok">+21명</span></td></tr>
-          <tr><td>친척</td><td>19</td><td>가족 대표 1차 확인</td><td><span class="pill ok">+10명</span></td></tr>
-          <tr><td>업무관계자</td><td>16</td><td>일정 재확인 링크 전송</td><td><span class="pill danger">+4명</span></td></tr>
-        </tbody>
-      </table>
-    </section>
 
-    <section id="cost" class="panel">
-      <div class="grid">
-        <div class="card"><div class="label">현재 식대 추정</div><div class="value">₩15,840,000</div></div>
-        <div class="card"><div class="label">최적화 후 식대</div><div class="value" style="color:var(--ok)">₩14,420,000</div></div>
-        <div class="card"><div class="label">예상 절감</div><div class="value" style="color:var(--ok)">₩1,420,000</div></div>
-      </div>
-      <table>
-        <thead><tr><th>시나리오</th><th>좌석 설정</th><th>답례품 수량</th><th>총비용</th></tr></thead>
-        <tbody>
-          <tr><td>보수적(과발주)</td><td>300석</td><td>320개</td><td>₩17,030,000</td></tr>
-          <tr><td>균형(권장)</td><td>276석</td><td>285개</td><td><span class="pill ok">₩14,420,000</span></td></tr>
-          <tr><td>공격적(리스크)</td><td>258석</td><td>265개</td><td><span class="pill danger">₩13,910,000*</span></td></tr>
-        </tbody>
-      </table>
-    </section>
+      <!-- Overview -->
+      <div class="host-panel active" id="host-overview">
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">초대</div>
+            <div class="stat-value">342</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">확정</div>
+            <div class="stat-value" style="color:var(--ok)">243</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">미응답</div>
+            <div class="stat-value" style="color:var(--warn)">73</div>
+          </div>
+        </div>
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">응답률</div>
+            <div class="stat-value">71%</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">노쇼 위험</div>
+            <div class="stat-value" style="color:var(--danger)">26</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">D-day</div>
+            <div class="stat-value" style="color:var(--accent)">D-14</div>
+          </div>
+        </div>
 
-    <section>
-      <h2>요금제</h2>
-      <div class="plans">
-        <div class="card"><div class="label">Free</div><div class="price">₩0</div><p>하객 100명, 기본 RSVP 대시보드</p></div>
-        <div class="card" style="border-color:#8ba6ff"><div class="label">Pro</div><div class="price">₩29,000/월</div><p>하객 500명, 자동 리마인드, 비용 시뮬레이터</p></div>
-        <div class="card"><div class="label">Studio</div><div class="price">₩79,000/월</div><p>다중 웨딩, 플래너 협업, 고급 리포트</p></div>
+        <div class="section-title">그룹별 전환 현황</div>
+        <div class="guest-row">
+          <div class="guest-avatar">친</div>
+          <div class="guest-info">
+            <div class="guest-name">친구/동료 <span style="color:var(--muted);font-size:12px">38명 미응답</span></div>
+            <div class="guest-group">SMS + 카카오톡 리마인드 추천</div>
+          </div>
+          <span class="status-pill status-confirmed">+21명 예상</span>
+        </div>
+        <div class="guest-row">
+          <div class="guest-avatar">친</div>
+          <div class="guest-info">
+            <div class="guest-name">친척 <span style="color:var(--muted);font-size:12px">19명 미응답</span></div>
+            <div class="guest-group">가족 대표 1차 확인 추천</div>
+          </div>
+          <span class="status-pill status-confirmed">+10명 예상</span>
+        </div>
+        <div class="guest-row">
+          <div class="guest-avatar">업</div>
+          <div class="guest-info">
+            <div class="guest-name">업무관계자 <span style="color:var(--muted);font-size:12px">16명 미응답</span></div>
+            <div class="guest-group">일정 재확인 링크 전송 추천</div>
+          </div>
+          <span class="status-pill status-declined">+4명 예상</span>
+        </div>
       </div>
-    </section>
+
+      <!-- Guest Management -->
+      <div class="host-panel" id="host-guests" style="display:none">
+        <div class="filter-row">
+          <button class="filter-chip active" data-guest-filter="all">전체 (342)</button>
+          <button class="filter-chip" data-guest-filter="confirmed">확정 (243)</button>
+          <button class="filter-chip" data-guest-filter="pending">미응답 (73)</button>
+          <button class="filter-chip" data-guest-filter="declined">불참 (26)</button>
+        </div>
+        <div id="guestList"></div>
+      </div>
+
+      <!-- Cost Optimizer -->
+      <div class="host-panel" id="host-cost" style="display:none">
+        <div class="cost-summary">
+          <div class="stat-label">예상 총 비용</div>
+          <div class="cost-total">₩14,420,000</div>
+          <div class="cost-saved">▼ ₩1,420,000 절감 (균형 모드)</div>
+          <div class="cost-bar"><div class="cost-bar-fill" style="width:72%;background:var(--ok)"></div></div>
+        </div>
+        <div class="section-title">시나리오 비교</div>
+        <div class="event-card" style="cursor:default">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:13px;color:var(--muted)">보수적 (과발주)</div>
+              <div style="font-size:18px;font-weight:700;margin-top:2px">₩17,030,000</div>
+            </div>
+            <div style="text-align:right;font-size:13px;color:var(--muted)">300석 · 320개</div>
+          </div>
+        </div>
+        <div class="event-card" style="cursor:default;border-color:var(--ok)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:13px;color:var(--ok);font-weight:700">✓ 균형 (권장)</div>
+              <div style="font-size:18px;font-weight:700;margin-top:2px">₩14,420,000</div>
+            </div>
+            <div style="text-align:right;font-size:13px;color:var(--muted)">276석 · 285개</div>
+          </div>
+        </div>
+        <div class="event-card" style="cursor:default">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:13px;color:var(--danger)">공격적 (리스크)</div>
+              <div style="font-size:18px;font-weight:700;margin-top:2px">₩13,910,000</div>
+            </div>
+            <div style="text-align:right;font-size:13px;color:var(--muted)">258석 · 265개</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding:12px;background:var(--warn-soft);border-radius:10px;font-size:13px;color:var(--warn)">
+          ⚠️ 공격적 모드는 노쇼율 예측이 빗나갈 경우 좌석 부족 리스크가 있습니다.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 3: 내 축의금 내역 -->
+    <div class="screen" id="screen-history">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">올해 지출</div>
+          <div class="stat-value" style="color:var(--danger)">₩85만</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">참석 횟수</div>
+          <div class="stat-value">7</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">평균 금액</div>
+          <div class="stat-value">₩12.1만</div>
+        </div>
+      </div>
+      <div class="section-title">축의금/조의금 기록</div>
+      <div id="historyList"></div>
+    </div>
+
+    <!-- Screen 4: 프로필 -->
+    <div class="screen" id="screen-profile">
+      <div class="profile-header">
+        <div class="profile-avatar">김</div>
+        <div class="profile-name">김민수</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px">@minsu.kim</div>
+        <div class="profile-stats">
+          <div class="profile-stat">
+            <div class="profile-stat-value">12</div>
+            <div class="profile-stat-label">참석</div>
+          </div>
+          <div class="profile-stat">
+            <div class="profile-stat-value">3</div>
+            <div class="profile-stat-label">호스트</div>
+          </div>
+          <div class="profile-stat">
+            <div class="profile-stat-value">₩210만</div>
+            <div class="profile-stat-label">총 지출</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-top:20px">설정</div>
+      <div class="menu-item">
+        <div class="menu-icon" style="background:var(--accent-soft);color:var(--accent)">🔔</div>
+        <div>
+          <div class="menu-label">알림 설정</div>
+          <div class="menu-desc">경조사 리마인더, D-day 알림</div>
+        </div>
+      </div>
+      <div class="menu-item">
+        <div class="menu-icon" style="background:var(--ok-soft);color:var(--ok)">💰</div>
+        <div>
+          <div class="menu-label">축의금 관리</div>
+          <div class="menu-desc">금액 기록 및 통계</div>
+        </div>
+      </div>
+      <div class="menu-item">
+        <div class="menu-icon" style="background:var(--warn-soft);color:var(--warn)">👥</div>
+        <div>
+          <div class="menu-label">연락처 연동</div>
+          <div class="menu-desc">주소록에서 하객 가져오기</div>
+        </div>
+      </div>
+      <div class="menu-item">
+        <div class="menu-icon" style="background:var(--danger-soft);color:var(--danger)">⚙️</div>
+        <div>
+          <div class="menu-label">앱 설정</div>
+          <div class="menu-desc">테마, 언어, 개인정보</div>
+        </div>
+      </div>
+    </div>
   </div>
-  <script>
-    document.querySelectorAll('.tab').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-        document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById(btn.dataset.tab).classList.add('active');
-      });
-    });
-  </script>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-screen="events">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      일정
+    </button>
+    <button class="nav-item" data-screen="host">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      호스트
+    </button>
+    <button class="nav-item" data-screen="history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      내역
+    </button>
+    <button class="nav-item" data-screen="profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      프로필
+    </button>
+  </nav>
+
+  <!-- FAB for adding events (host) -->
+  <button class="fab" id="fabBtn" style="display:none" onclick="showCreateModal()">+</button>
+
+  <!-- Event Detail Modal -->
+  <div class="modal-overlay" id="eventModal">
+    <div class="modal-sheet" id="eventModalContent"></div>
+  </div>
+</div>
+
+<script>
+// ── Data ──
+const events = [
+  { id: 1, type: 'wedding', title: '김영수 ♥ 이지현 결혼식', date: '2026-02-22', time: '12:00', location: '더채플앳청담 3층', host: '김영수', dday: 3, amount: null, rsvp: null, note: '대학 동기' },
+  { id: 2, type: 'funeral', title: '박성호님 부친상', date: '2026-02-20', time: '빈소 3일장', location: '서울아산병원 장례식장', host: '박성호', dday: 1, amount: null, rsvp: null, note: '팀장님 부친' },
+  { id: 3, type: 'baby', title: '최민정 아기 돌잔치', date: '2026-02-28', time: '11:30', location: '그랜드힐튼 컨벤션홀', host: '최민정', dday: 9, amount: null, rsvp: null, note: '회사 동기' },
+  { id: 4, type: 'birthday', title: '정예진 생일파티', date: '2026-02-25', time: '19:00', location: '이태원 루프탑바', host: '정예진', dday: 6, amount: null, rsvp: null, note: '친한 친구' },
+  { id: 5, type: 'wedding', title: '한승우 ♥ 서유나 결혼식', date: '2026-03-07', time: '14:00', location: '반포 JW메리어트 그랜드볼룸', host: '한승우', dday: 16, amount: null, rsvp: null, note: '고등학교 친구' },
+  { id: 6, type: 'housewarming', title: '이동훈 집들이', date: '2026-03-14', time: '17:00', location: '마포구 상암동 새 아파트', host: '이동훈', dday: 23, amount: null, rsvp: null, note: '전 직장 동료' },
+  { id: 7, type: 'wedding', title: '김태호 ♥ 장서연 결혼식', date: '2026-03-21', time: '11:00', location: '신라호텔 다이너스티홀', host: '김태호', dday: 30, amount: null, rsvp: null, note: '사촌' },
+  { id: 8, type: 'funeral', title: '오진우님 모친상', date: '2026-03-05', time: '빈소 3일장', location: '세브란스병원 장례식장', host: '오진우', dday: 14, amount: null, rsvp: null, note: '동네 이웃' },
+];
+
+const guests = [
+  { name: '김민주', group: '대학 친구', status: 'confirmed' },
+  { name: '이하늘', group: '직장 동료', status: 'confirmed' },
+  { name: '박준호', group: '고등학교', status: 'pending' },
+  { name: '최서연', group: '직장 동료', status: 'confirmed' },
+  { name: '정민기', group: '친척', status: 'confirmed' },
+  { name: '한수빈', group: '대학 친구', status: 'declined' },
+  { name: '오영민', group: '직장 동료', status: 'pending' },
+  { name: '윤소희', group: '고등학교', status: 'confirmed' },
+  { name: '장태영', group: '친척', status: 'pending' },
+  { name: '임채은', group: '대학 친구', status: 'confirmed' },
+  { name: '송지안', group: '직장 동료', status: 'confirmed' },
+  { name: '신현우', group: '업무 관계', status: 'pending' },
+];
+
+const history = [
+  { name: '이재민 ♥ 강하나 결혼식', date: '2026-01-18', type: 'wedding', amount: 100000, attended: true },
+  { name: '김서준님 부친상', date: '2026-01-10', type: 'funeral', amount: 50000, attended: true },
+  { name: '박예은 아기 돌잔치', date: '2025-12-20', type: 'baby', amount: 50000, attended: true },
+  { name: '정우성 ♥ 나은 결혼식', date: '2025-12-06', type: 'wedding', amount: 100000, attended: true },
+  { name: '최민호 집들이', date: '2025-11-22', type: 'housewarming', amount: 0, attended: true },
+  { name: '한소희 생일', date: '2025-11-15', type: 'birthday', amount: 50000, attended: true },
+  { name: '오세훈 ♥ 김예지 결혼식', date: '2025-10-25', type: 'wedding', amount: 200000, attended: false },
+];
+
+// ── Type Config ──
+const typeConfig = {
+  wedding: { label: '결혼', badge: 'badge-wedding', emoji: '💒', defaultAmount: 50000 },
+  funeral: { label: '부고', badge: 'badge-funeral', emoji: '🕊️', defaultAmount: 50000 },
+  birthday: { label: '생일', badge: 'badge-birthday', emoji: '🎂', defaultAmount: 30000 },
+  baby: { label: '돌잔치', badge: 'badge-baby', emoji: '🍼', defaultAmount: 50000 },
+  housewarming: { label: '집들이', badge: 'badge-housewarming', emoji: '🏠', defaultAmount: 0 },
+};
+
+// ── Render Events ──
+function renderEvents(filter = 'all') {
+  const febEvents = events.filter(e => e.date.startsWith('2026-02') && (filter === 'all' || e.type === filter));
+  const marEvents = events.filter(e => e.date.startsWith('2026-03') && (filter === 'all' || e.type === filter));
+
+  document.getElementById('eventList').innerHTML = febEvents.map(e => eventCardHTML(e)).join('');
+  document.getElementById('eventListMarch').innerHTML = marEvents.map(e => eventCardHTML(e)).join('');
+}
+
+function eventCardHTML(e) {
+  const cfg = typeConfig[e.type];
+  const ddayClass = e.dday <= 3 ? 'dday-soon' : e.dday <= 7 ? 'dday-upcoming' : 'dday-far';
+  const rsvpText = e.rsvp === 'confirmed' ? '<span class="status-pill status-confirmed">참석 확정</span>'
+    : e.rsvp === 'declined' ? '<span class="status-pill status-declined">불참</span>'
+    : '<span class="status-pill status-pending">미응답</span>';
+  return `
+    <div class="event-card" onclick="openEventModal(${e.id})">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <span class="event-type-badge ${cfg.badge}">${cfg.emoji} ${cfg.label}</span>
+        <span class="dday ${ddayClass}">D-${e.dday}</span>
+      </div>
+      <div class="event-title">${e.title}</div>
+      <div class="event-meta">
+        <span>📅 ${formatDate(e.date)} ${e.time}</span>
+        <span>📍 ${e.location}</span>
+      </div>
+      <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;color:var(--muted)">${e.note}</span>
+        ${rsvpText}
+      </div>
+    </div>`;
+}
+
+function formatDate(d) {
+  const date = new Date(d);
+  return `${date.getMonth()+1}/${date.getDate()}(${['일','월','화','수','목','금','토'][date.getDay()]})`;
+}
+
+// ── Event Modal ──
+function openEventModal(id) {
+  const e = events.find(ev => ev.id === id);
+  if (!e) return;
+  const cfg = typeConfig[e.type];
+  const isRsvped = e.rsvp === 'confirmed';
+  const isDeclined = e.rsvp === 'declined';
+
+  document.getElementById('eventModalContent').innerHTML = `
+    <div class="modal-handle"></div>
+    <span class="event-type-badge ${cfg.badge}" style="font-size:13px">${cfg.emoji} ${cfg.label}</span>
+    <h2 style="font-size:22px;font-weight:800;margin:10px 0 6px">${e.title}</h2>
+    <div style="color:var(--muted);font-size:14px;margin-bottom:16px">
+      <div style="margin-bottom:4px">📅 ${formatDate(e.date)} ${e.time}</div>
+      <div style="margin-bottom:4px">📍 ${e.location}</div>
+      <div>👤 호스트: ${e.host}</div>
+    </div>
+
+    <div class="amount-section">
+      <div style="font-size:14px;font-weight:700;margin-bottom:8px">💰 축의금 / 조의금</div>
+      <div class="amount-input-wrap">
+        <span>₩</span>
+        <input class="amount-input" type="number" id="amountInput" placeholder="금액 입력"
+          value="${e.amount || ''}" onchange="setAmount(${e.id}, this.value)" />
+        <span style="font-size:12px;color:var(--muted)">원</span>
+      </div>
+      <div class="quick-amounts">
+        <button class="quick-amount" onclick="setQuickAmount(${e.id}, 30000)">3만원</button>
+        <button class="quick-amount" onclick="setQuickAmount(${e.id}, 50000)">5만원</button>
+        <button class="quick-amount" onclick="setQuickAmount(${e.id}, 100000)">10만원</button>
+        <button class="quick-amount" onclick="setQuickAmount(${e.id}, 200000)">20만원</button>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;padding:14px;background:var(--card);border:1px solid var(--line);border-radius:12px">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:6px">📝 메모</div>
+      <div style="font-size:14px">${e.note}</div>
+    </div>
+
+    <div class="rsvp-actions">
+      <button class="btn ${isRsvped ? 'btn-secondary' : 'btn-primary'}" onclick="setRsvp(${e.id}, 'confirmed')">
+        ${isRsvped ? '✓ 참석 확정됨' : '참석할게요'}
+      </button>
+      <button class="btn ${isDeclined ? 'btn-danger' : 'btn-secondary'}" onclick="setRsvp(${e.id}, 'declined')">
+        ${isDeclined ? '✗ 불참 확정' : '불참'}
+      </button>
+    </div>
+
+    <button class="btn btn-secondary" style="width:100%;margin-top:10px" onclick="closeModal()">닫기</button>
+  `;
+  document.getElementById('eventModal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('eventModal').classList.remove('active');
+}
+
+function setRsvp(id, status) {
+  const e = events.find(ev => ev.id === id);
+  if (e) { e.rsvp = status; openEventModal(id); renderEvents(currentFilter); }
+}
+
+function setAmount(id, val) {
+  const e = events.find(ev => ev.id === id);
+  if (e) e.amount = parseInt(val) || null;
+}
+
+function setQuickAmount(id, val) {
+  const e = events.find(ev => ev.id === id);
+  if (e) { e.amount = val; document.getElementById('amountInput').value = val; }
+}
+
+// ── Guests ──
+function renderGuests(filter = 'all') {
+  const list = filter === 'all' ? guests : guests.filter(g => g.status === filter);
+  document.getElementById('guestList').innerHTML = list.map(g => {
+    const statusClass = g.status === 'confirmed' ? 'status-confirmed' : g.status === 'pending' ? 'status-pending' : 'status-declined';
+    const statusLabel = g.status === 'confirmed' ? '확정' : g.status === 'pending' ? '미응답' : '불참';
+    return `
+      <div class="guest-row">
+        <div class="guest-avatar">${g.name[0]}</div>
+        <div class="guest-info">
+          <div class="guest-name">${g.name}</div>
+          <div class="guest-group">${g.group}</div>
+        </div>
+        <span class="status-pill ${statusClass}">${statusLabel}</span>
+      </div>`;
+  }).join('');
+}
+
+// ── History ──
+function renderHistory() {
+  document.getElementById('historyList').innerHTML = history.map(h => {
+    const cfg = typeConfig[h.type];
+    return `
+      <div class="guest-row">
+        <div class="guest-avatar" style="font-size:16px">${cfg.emoji}</div>
+        <div class="guest-info">
+          <div class="guest-name">${h.name}</div>
+          <div class="guest-group">${h.date} · ${h.attended ? '참석' : '미참석'}</div>
+        </div>
+        <span style="font-size:15px;font-weight:700;color:${h.amount > 0 ? 'var(--danger)' : 'var(--muted)'}">
+          ${h.amount > 0 ? '-₩' + (h.amount/10000) + '만' : '-'}
+        </span>
+      </div>`;
+  }).join('');
+}
+
+// ── Navigation ──
+let currentFilter = 'all';
+
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(x => x.classList.remove('active'));
+    btn.classList.add('active');
+    const screen = btn.dataset.screen;
+    document.getElementById('screen-' + screen).classList.add('active');
+
+    const titles = { events: '경조사', host: '호스트 대시보드', history: '축의금 내역', profile: '프로필' };
+    const subs = { events: '내 경조사를 한눈에', host: 'RSVP 관리 & 비용 최적화', history: '지출 기록 관리', profile: '계정 설정' };
+    document.getElementById('headerTitle').textContent = titles[screen];
+    document.getElementById('headerSubtitle').textContent = subs[screen];
+
+    document.getElementById('fabBtn').style.display = screen === 'host' ? 'flex' : 'none';
+  });
+});
+
+// Filter chips
+document.querySelectorAll('.filter-row .filter-chip[data-filter]').forEach(chip => {
+  chip.addEventListener('click', () => {
+    chip.parentElement.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    currentFilter = chip.dataset.filter;
+    renderEvents(currentFilter);
+  });
+});
+
+// Guest filter
+document.querySelectorAll('.filter-chip[data-guest-filter]').forEach(chip => {
+  chip.addEventListener('click', () => {
+    chip.parentElement.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    renderGuests(chip.dataset.guestFilter);
+  });
+});
+
+// Host tabs
+document.querySelectorAll('.host-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.host-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.host-panel').forEach(p => p.style.display = 'none');
+    tab.classList.add('active');
+    document.getElementById('host-' + tab.dataset.hostTab).style.display = 'block';
+  });
+});
+
+// Modal close on overlay click
+document.getElementById('eventModal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('eventModal')) closeModal();
+});
+
+// ── Init ──
+renderEvents();
+renderGuests();
+renderHistory();
+</script>
 </body>
 </html>
