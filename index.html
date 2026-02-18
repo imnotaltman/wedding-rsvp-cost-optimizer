@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wedding RSVP Cost Optimizer</title>
+  <style>
+    :root { --bg:#0b1020; --card:#131b33; --muted:#9ca8c7; --line:#273257; --accent:#7c9cff; --ok:#46d39a; --warn:#ffb454; }
+    *{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:linear-gradient(120deg,#0b1020,#151b2f);color:#eef2ff}
+    .wrap{max-width:1100px;margin:0 auto;padding:28px}
+    h1{margin:0 0 8px;font-size:30px} .sub{color:var(--muted);margin-bottom:22px}
+    .tabs{display:flex;gap:10px;margin-bottom:16px} .tab{padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#101831;color:#cbd5ff;cursor:pointer}
+    .tab.active{background:var(--accent);border-color:var(--accent);color:#07102d;font-weight:700}
+    .panel{display:none} .panel.active{display:block}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+    .label{color:var(--muted);font-size:12px}.value{font-size:24px;font-weight:700;margin-top:6px}
+    table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+    th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;font-size:14px} th{color:#c5d1ff;background:#141f3c}
+    .pill{padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700}.danger{background:#40223b;color:#ff9ec8}.ok{background:#173427;color:#95f5c8}
+    .plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px}
+    .price{font-size:28px;font-weight:800}
+    @media(max-width:900px){.grid,.plans{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Wedding RSVP Cost Optimizer</h1>
+    <div class="sub">하객 RSVP 변동 기반 식대/답례품/좌석 최적화 운영 프로토타입</div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="rsvp">핵심 화면 1: RSVP 전환 대시보드</button>
+      <button class="tab" data-tab="cost">핵심 화면 2: 비용 최적화 시뮬레이터</button>
+    </div>
+
+    <section id="rsvp" class="panel active">
+      <div class="grid">
+        <div class="card"><div class="label">초대 발송</div><div class="value">342명</div></div>
+        <div class="card"><div class="label">확정 응답률</div><div class="value">71%</div></div>
+        <div class="card"><div class="label">노쇼 위험 하객</div><div class="value" style="color:var(--warn)">26명</div></div>
+      </div>
+      <table>
+        <thead><tr><th>그룹</th><th>미응답 수</th><th>리마인드 추천</th><th>예상 확정 전환</th></tr></thead>
+        <tbody>
+          <tr><td>친구/동료</td><td>38</td><td>SMS + 카카오톡 리마인드</td><td><span class="pill ok">+21명</span></td></tr>
+          <tr><td>친척</td><td>19</td><td>가족 대표 1차 확인</td><td><span class="pill ok">+10명</span></td></tr>
+          <tr><td>업무관계자</td><td>16</td><td>일정 재확인 링크 전송</td><td><span class="pill danger">+4명</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="cost" class="panel">
+      <div class="grid">
+        <div class="card"><div class="label">현재 식대 추정</div><div class="value">₩15,840,000</div></div>
+        <div class="card"><div class="label">최적화 후 식대</div><div class="value" style="color:var(--ok)">₩14,420,000</div></div>
+        <div class="card"><div class="label">예상 절감</div><div class="value" style="color:var(--ok)">₩1,420,000</div></div>
+      </div>
+      <table>
+        <thead><tr><th>시나리오</th><th>좌석 설정</th><th>답례품 수량</th><th>총비용</th></tr></thead>
+        <tbody>
+          <tr><td>보수적(과발주)</td><td>300석</td><td>320개</td><td>₩17,030,000</td></tr>
+          <tr><td>균형(권장)</td><td>276석</td><td>285개</td><td><span class="pill ok">₩14,420,000</span></td></tr>
+          <tr><td>공격적(리스크)</td><td>258석</td><td>265개</td><td><span class="pill danger">₩13,910,000*</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>요금제</h2>
+      <div class="plans">
+        <div class="card"><div class="label">Free</div><div class="price">₩0</div><p>하객 100명, 기본 RSVP 대시보드</p></div>
+        <div class="card" style="border-color:#8ba6ff"><div class="label">Pro</div><div class="price">₩29,000/월</div><p>하객 500명, 자동 리마인드, 비용 시뮬레이터</p></div>
+        <div class="card"><div class="label">Studio</div><div class="price">₩79,000/월</div><p>다중 웨딩, 플래너 협업, 고급 리포트</p></div>
+      </div>
+    </section>
+  </div>
+  <script>
+    document.querySelectorAll('.tab').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
